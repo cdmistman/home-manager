@@ -96,6 +96,20 @@ in {
       '';
     };
 
+		loginFile = mkOption {
+			type = types.nullOr (linesOrSource "login.nu");
+			default = null;
+			example = ''
+				let-env PATH = ($env.PATH | split row (char esep) | append '/some/path')
+			'';
+			description = ''
+				The login file to be used for nushell.
+				</para>
+				<para>
+				See <link xlink:href="https://www.nushell.sh/book/configuration.html#configuring-nu-as-a-login-shell" /> for more information.
+			'';
+		};
+
     extraConfig = mkOption {
       type = types.lines;
       default = "";
@@ -111,6 +125,14 @@ in {
         Additional configuration to add to the nushell environment variables file.
       '';
     };
+
+		extraLogin = mkOption {
+			type = types.lines;
+			default = "";
+			description = ''
+				Additional configuration to add to the nushell login file.
+			'';
+		};
   };
 
   config = mkIf cfg.enable {
@@ -126,6 +148,12 @@ in {
         "${configDir}/env.nu".text = mkMerge [
           (mkIf (cfg.envFile != null) cfg.envFile.text)
           cfg.extraEnv
+        ];
+      })
+      (mkIf (cfg.loginFile != null || cfg.extralogin != "") {
+        "${configDir}/login.nu".text = mkMerge [
+          (mkIf (cfg.loginFile != null) cfg.loginFile.text)
+          cfg.extralogin
         ];
       })
     ];
