@@ -153,7 +153,7 @@ in {
       (mkIf (cfg.loginFile != null || cfg.extralogin != "") {
         "${configDir}/login.nu".text = mkMerge [
           (mkIf (cfg.loginFile != null) cfg.loginFile.text)
-          cfg.extralogin
+          cfg.extraLogin
         ];
       })
     ];
