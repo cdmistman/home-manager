@@ -192,6 +192,7 @@ let
     ./programs/pls.nix
     ./programs/poetry.nix
     ./programs/powerline-go.nix
+    ./programs/process-compose.nix
     ./programs/pqiv.nix
     ./programs/pubs.nix
     ./programs/pyenv.nix
