@@ -7,6 +7,21 @@ let
   cfg = config.programs.jujutsu;
   tomlFormat = pkgs.formats.toml { };
 
+  inherit (pkgs.stdenv.hostPlatform) isDarwin;
+
+  config-file = tomlFormat.generate "jujutsu-config" (cfg.settings
+    // optionalAttrs (cfg.ediff) (let
+      emacsDiffScript = pkgs.writeShellScriptBin "emacs-ediff" ''
+        set -euxo pipefail
+        ${config.programs.emacs.package}/bin/emacsclient -c --eval "(ediff-merge-files-with-ancestor \"$1\" \"$2\" \"$3\" nil \"$4\")"
+      '';
+    in {
+      merge-tools.ediff = {
+        program = getExe emacsDiffScript;
+        merge-args = [ "$left" "$right" "$base" "$output" ];
+      };
+    }));
+
 in {
   meta.maintainers = [ maintainers.shikanime ];
 
@@ -48,22 +63,17 @@ in {
     };
   };
 
-  config = mkIf cfg.enable {
-    home.packages = [ cfg.package ];
+  config = mkIf cfg.enable (lib.mkMerge [
+    { home.packages = [ cfg.package ]; }
 
-    xdg.configFile."jj/config.toml" = mkIf (cfg.settings != { }) {
-      source = tomlFormat.generate "jujutsu-config" (cfg.settings
-        // optionalAttrs (cfg.ediff) (let
-          emacsDiffScript = pkgs.writeShellScriptBin "emacs-ediff" ''
-            set -euxo pipefail
-            ${config.programs.emacs.package}/bin/emacsclient -c --eval "(ediff-merge-files-with-ancestor \"$1\" \"$2\" \"$3\" nil \"$4\")"
-          '';
-        in {
-          merge-tools.ediff = {
-            program = getExe emacsDiffScript;
-            merge-args = [ "$left" "$right" "$base" "$output" ];
-          };
-        }));
-    };
-  };
+    (lib.mkIf isDarwin {
+      home.file."Library/Application Support/jj/config.toml" =
+        mkIf (cfg.settings != { }) { source = config-file; };
+    })
+
+    (lib.mkIf (!isDarwin) {
+      xdg.configFile."jj/config.toml" =
+        mkIf (cfg.settings != { }) { source = config-file; };
+    })
+  ]);
 }
